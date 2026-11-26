@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>台灣周邊海域水下光通可達距離</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root { --bg: #f4f6f8; --card: #fff; --text: #1d2733; --muted: #6b7684; --accent: #1f6feb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+    .card { background: var(--card); border-radius: 14px; box-shadow: 0 6px 24px rgba(20, 30, 50, .10); padding: 28px 24px; max-width: 420px; width: 100%; text-align: center; }
+    h1 { font-size: 18px; margin: 0 0 14px; }
+    p { margin: 6px 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .spin { width: 28px; height: 28px; margin: 6px auto 12px; border: 3px solid #d8e2ee; border-top-color: var(--accent); border-radius: 50%; animation: s 0.8s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+    .off .spin { display: none; }
+    a { color: var(--accent); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="card" id="card">
+    <h1>台灣周邊海域水下光通可達距離</h1>
+    <div class="spin"></div>
+    <p id="msg">正在開啟地圖…</p>
+    <p id="retry" hidden>每 20 秒自動重試一次。</p>
+  </main>
+  <script>
+    // The map runs on a presenter's computer behind a temporary tunnel; target.json holds its current address.
+    const msg = document.getElementById('msg');
+    async function go() {
+      let url = null;
+      try {
+        const r = await fetch('target.json?t=' + Date.now(), { cache: 'no-store' });
+        url = (await r.json()).url;
+      } catch (_) { /* treat as offline */ }
+      if (url) {
+        try {
+          const ctl = new AbortController();
+          setTimeout(() => ctl.abort(), 8000);
+          const h = await fetch(url + '/api/health', { cache: 'no-store', signal: ctl.signal });
+          if (h.ok) { location.replace(url + location.hash); return; }
+        } catch (_) { /* not reachable */ }
+      }
+      document.getElementById('card').classList.add('off');
+      msg.textContent = '地圖目前沒有開放（展示用電腦未開啟）。請稍後再試。';
+      document.getElementById('retry').hidden = false;
+      setTimeout(go, 20000);
+    }
+    go();
+  </script>
+</body>
+</html>
